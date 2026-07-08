@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>Lunarelle VRM Avatar Fixed App</title>
+  <title>Lunarelle VRM Avatar Size Fix App</title>
   <style>
     :root{
       --bg:#070813; --panel:rgba(13,16,30,.78); --panel2:rgba(255,255,255,.075); --line:rgba(255,255,255,.14);
@@ -31,7 +31,7 @@
 <body>
   <div class="app">
     <header>
-      <div class="brand"><div class="mark"></div><div><h1>Lunarelle VRM Avatar Fixed</h1><div class="sub" id="subStatus">未起動 / 内蔵VRM待機</div></div></div>
+      <div class="brand"><div class="mark"></div><div><h1>Lunarelle VRM Avatar Size Fix</h1><div class="sub" id="subStatus">未起動 / 内蔵VRM待機</div></div></div>
       <div class="status"><strong id="fps">0</strong> fps<br><span id="modeText">アバターモード</span></div>
     </header>
 
@@ -227,6 +227,8 @@ async function loadVRMFromArrayBuffer(arrayBuffer, label='読み込みVRM'){
   currentModelMeta = {
     label,
     naturalHeight: Math.max(0.01, size.y),
+    naturalMinY: bbox.min.y,
+    naturalMaxY: bbox.max.y,
     naturalHipY: hipsPos.y,
     bones: {},
     baseQuat: {},
@@ -249,7 +251,7 @@ async function loadVRMFromArrayBuffer(arrayBuffer, label='読み込みVRM'){
 async function loadBuiltInVRM(){
   try{
     loadBuiltInBtn.disabled = true;
-    await loadVRMFromArrayBuffer(base64ToArrayBuffer(EMBEDDED_VRM_B64), '内蔵ルナレル試作VRM 修正版');
+    await loadVRMFromArrayBuffer(base64ToArrayBuffer(EMBEDDED_VRM_B64), '内蔵ルナレル試作VRM サイズ補正版');
   }catch(err){
     console.error(err);
     showToast(err?.message || '内蔵VRMの読み込みに失敗しました');
@@ -350,9 +352,10 @@ function setIdleVRMPose(){
   if(!currentVRM || !currentModelMeta){ if(avatarRoot) avatarRoot.visible = false; return; }
   avatarRoot.visible = true;
   resetBones();
-  const scale = clamp((viewHeight * .68) / currentModelMeta.naturalHeight, .7, 2.7);
+  const scale = clamp((viewHeight * .82) / currentModelMeta.naturalHeight, 1.45, 5.2);
   avatarRoot.scale.setScalar(scale);
-  avatarRoot.position.set(0, clamp(-currentModelMeta.naturalHipY * scale - .05, -viewHeight*.38, viewHeight*.08), 0);
+  const centerY = (currentModelMeta.naturalMinY + currentModelMeta.naturalMaxY) * 0.5;
+  avatarRoot.position.set(0, clamp(-centerY * scale, -viewHeight*.42, -viewHeight*.08), 0);
   setBoneRot('leftUpperArm', 0, 0, -.55);
   setBoneRot('leftLowerArm', 0, 0, -.08);
   setBoneRot('rightUpperArm', 0, 0, .55);
@@ -384,16 +387,19 @@ function updateVRMAvatar(lm){
   // 表示安定化：MediaPipeは上半身だけ映ると腰・足首が画面外に飛びやすい。
   // その値をそのままVRMの原点に使うと、読み込み済みなのに画面外へ消える。
   // 肩幅を主スケールにし、腰アンカーは画面内にクランプする。
-  const shoulderBasedHeight = shoulderW * 5.6;
-  const fullBodyHeight = anklesVisible && isGoodPoint(p[0]) ? dist(p[0], p.ankles) * 1.05 : shoulderBasedHeight;
-  const bodyH = clamp(Math.max(2.35, Math.min(fullBodyHeight, shoulderBasedHeight * 1.25)), 2.2, viewHeight * 0.92);
-
-  const scale = clamp(bodyH / currentModelMeta.naturalHeight, .72, 2.85);
+  // サイズ補正：iPhoneの近距離・上半身のみの検出では、肩幅や推定腰から全身サイズを逆算すると
+  // VRMが極端に小さくなる。ここではまず「必ず見える大きさ」を優先し、
+  // スケールは画面高基準で固定、位置だけ肩中心に軽く追従させる。
+  const desiredHeight = viewHeight * (mode === 'test' ? 0.78 : 0.86);
+  const scale = clamp(desiredHeight / currentModelMeta.naturalHeight, 1.45, 5.2);
   avatarRoot.scale.setScalar(scale);
 
-  const hipsYRaw = p.hips.y - currentModelMeta.naturalHipY * scale;
-  const safeX = clamp(p.hips.x, -viewWidth * .33, viewWidth * .33);
-  const safeY = clamp(hipsYRaw, -viewHeight * .42, viewHeight * .18);
+  // 試作VRMの肩位置は身長の約82%付近。厳密な骨座標ではなく、表示安定用の近似値。
+  const naturalShoulderY = currentModelMeta.naturalMinY + currentModelMeta.naturalHeight * 0.82;
+  const targetShoulderX = clamp(p.shoulders.x, -viewWidth * 0.26, viewWidth * 0.26);
+  const targetShoulderY = clamp(p.shoulders.y, -viewHeight * 0.02, viewHeight * 0.28);
+  const safeX = targetShoulderX;
+  const safeY = clamp(targetShoulderY - naturalShoulderY * scale, -viewHeight * 0.46, -viewHeight * 0.12);
   avatarRoot.position.set(safeX, safeY, 0);
 
   resetBones();
@@ -548,7 +554,7 @@ function renderLoop(){
 
 function initialPaint(){
   fitCanvases(); initThree(); drawFantasyBackground(vctx,videoCanvas.width,videoCanvas.height);
-  lctx.save(); lctx.textAlign='center'; lctx.fillStyle='rgba(255,255,255,.92)'; lctx.font=`${Math.max(19,Math.round(videoCanvas.height*.032))}px system-ui`; lctx.fillText('開始を押す',videoCanvas.width/2,videoCanvas.height/2-14); lctx.font=`${Math.max(12,Math.round(videoCanvas.height*.020))}px system-ui`; lctx.fillStyle='rgba(255,255,255,.64)'; lctx.fillText('内蔵のルナレル試作VRMを読み込んで、体の動きに合わせて動かします',videoCanvas.width/2,videoCanvas.height/2+24); lctx.restore();
+  lctx.save(); lctx.textAlign='center'; lctx.fillStyle='rgba(255,255,255,.92)'; lctx.font=`${Math.max(19,Math.round(videoCanvas.height*.032))}px system-ui`; lctx.fillText('開始を押す',videoCanvas.width/2,videoCanvas.height/2-14); lctx.font=`${Math.max(12,Math.round(videoCanvas.height*.020))}px system-ui`; lctx.fillStyle='rgba(255,255,255,.64)'; lctx.fillText('サイズ固定補正済み。内蔵VRMを大きめに表示してから体の動きに合わせます',videoCanvas.width/2,videoCanvas.height/2+24); lctx.restore();
 }
 initialPaint();
 loadBuiltInVRM();
