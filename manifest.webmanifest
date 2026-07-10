@@ -1,0 +1,16 @@
+{
+  "name": "今日の世界の窓",
+  "short_name": "世界の窓",
+  "description": "世界のどこかの一日を、静かに眺める。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#11110f",
+  "theme_color": "#11110f",
+  "lang": "ja",
+  "icons": [
+    {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}

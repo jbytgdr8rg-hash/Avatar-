@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#11110f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="description" content="世界のどこかの一日を、静かに眺める。" />
+  <title>今日の世界の窓</title>
+  <link rel="preconnect" href="https://images.unsplash.com" />
+  <link rel="preconnect" href="https://upload.wikimedia.org" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app" id="app" aria-live="polite">
+    <div class="backdrop" id="backdrop"></div>
+    <img class="scene" id="scene" alt="" />
+    <div class="veil"></div>
+    <div class="grain"></div>
+
+    <header class="topbar">
+      <div class="brand">今日の世界の窓</div>
+      <button class="icon-button" id="infoButton" aria-label="この写真の情報" type="button">
+        <span>i</span>
+      </button>
+    </header>
+
+    <section class="content">
+      <div class="eyebrow" id="country">—</div>
+      <h1 id="city">世界のどこか</h1>
+      <div class="meta-row">
+        <span id="localTime">--:--</span>
+        <span class="dot">·</span>
+        <span id="weather">読み込み中</span>
+      </div>
+      <p class="caption" id="caption">窓の向こうを読み込んでいます。</p>
+    </section>
+
+    <footer class="footer">
+      <div class="credit" id="credit"></div>
+      <button class="next-button" id="nextButton" type="button" aria-label="次の場所を見る">
+        <span>次の窓</span><span aria-hidden="true">→</span>
+      </button>
+    </footer>
+
+    <div class="progress" id="progress"><span></span></div>
+
+    <dialog class="sheet" id="infoSheet">
+      <button class="sheet-close" id="closeSheet" type="button" aria-label="閉じる">×</button>
+      <div class="sheet-kicker">ABOUT THIS WINDOW</div>
+      <h2 id="sheetTitle">写真について</h2>
+      <dl>
+        <div><dt>場所</dt><dd id="sheetPlace">—</dd></div>
+        <div><dt>画像</dt><dd id="sheetSource">—</dd></div>
+        <div><dt>ライセンス</dt><dd id="sheetLicense">—</dd></div>
+      </dl>
+      <p class="sheet-note">写真は「今日撮影されたもの」とは限りません。現地の現在時刻と天気を重ね、その場所の今を静かに想像するための窓です。</p>
+    </dialog>
+
+    <section class="error-card" id="errorCard" hidden>
+      <h2>窓を開けませんでした</h2>
+      <p id="errorMessage">通信環境を確認してください。</p>
+      <button id="retryButton" type="button">もう一度試す</button>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.warn));
+    }
+  </script>
+</body>
+</html>
